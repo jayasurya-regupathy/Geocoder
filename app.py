@@ -51,18 +51,11 @@ def geocoder():
     res = pd.DataFrame()
     for i in addresssplit:
         iplist.append(i.strip())
-    for c in counties['County']:
+    for c in counties['English_Name']:
         for i in iplist:
             if(d.levenshteinDistanceRatio(c,i)>ratio and d.levenshteinDistanceRatio(c,i)>0.8):
                 county = c
                 temp = i
-    
-    if (not county) or (len(county)==0):
-        for c in counties['AlternateName']:
-            for i in iplist:
-                if(d.levenshteinDistanceRatio(c,i)>ratio and d.levenshteinDistanceRatio(c,i)>0.8):
-                    county = c
-                    temp = i
 
     if (not county) or (len(county)==0):
         return make_response(jsonify({"error":{"code":"400",
@@ -75,17 +68,16 @@ def geocoder():
                 if(d.levenshteinDistanceRatio(i,a)>ratio):
                     ratio = d.levenshteinDistanceRatio(i,a)
                     townland=a
-                    
-    if townland:
-        res = townland_df[townland_df['English_Name']==townland]
     if (not townland) or (len(townland)==0):
         for a in townland_df['Alternate_Name']:
             for i in iplist:
                 if(d.levenshteinDistanceRatio(i,a)>ratio):
                     ratio = d.levenshteinDistanceRatio(i,a)
                     townland=a
+    if townland:
+        res = townland_df[townland_df['English_Name']==townland].head(1)
     if (not townland) or (len(townland)==0):
-        res = counties[counties['English_Name']==county]
+        res = counties[counties['English_Name']==county].head(1)
     wgs84 = pyproj.Proj(projparams = 'epsg:4326')
     InputGrid = pyproj.Proj(projparams = 'epsg:2157')
     latlong = pyproj.transform(InputGrid, wgs84,res.ITM_E.item(), res.ITM_N.item())
