@@ -42,5 +42,11 @@ class FlaskTest(unittest.TestCase):
         response = tester.get(base_url+'?address=')
         self.assertTrue(b'error' in response.data)
 
+    def test_outputs(self):
+        for add in testdata:
+            tester = app.test_client(self)
+            response = tester.get(base_url+'?address='+add)
+            self.assertTrue(b'error' or b'data' in response.data)
+
 if __name__ == "__main__":
     unittest.main()
