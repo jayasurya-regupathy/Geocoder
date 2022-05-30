@@ -1,12 +1,16 @@
 try:
     import unittest
     import requests
+    import pandas as pd
     from app import app
 
 except Exception as e:
     print("Some Modules are Missing {}".format(e))
 
 base_url = "http://127.0.0.1:5000/geocoder"
+
+testdata = pd.read_csv("data/addresses_for_task.csv")
+
 class FlaskTest(unittest.TestCase):
     #Check for 200 response
     def test_positive(self):   
@@ -37,5 +41,6 @@ class FlaskTest(unittest.TestCase):
         tester = app.test_client(self)
         response = tester.get(base_url+'?address=')
         self.assertTrue(b'error' in response.data)
+
 if __name__ == "__main__":
     unittest.main()
