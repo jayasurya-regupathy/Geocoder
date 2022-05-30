@@ -7,10 +7,11 @@ warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 
+#Data Pre-processing
 counties = pd.read_csv("data/Counties_-_OSi_National_Placenames_Gazetteer.csv")
 townlands = pd.read_csv("data/Townlands_-_OSi_National_Placenames_Gazetteer.csv")
-townlands = townlands[['County', 'English_Name', 'ITM_E','ITM_N']]
-counties = counties[['County', 'English_Name', 'ITM_E','ITM_N']]
+townlands = townlands[['County', 'English_Name', 'Alternative_Name','ITM_E','ITM_N']]
+counties = counties[['County', 'English_Name','Alternative_Name', 'ITM_E','ITM_N']]
 townlands['County'] = townlands['County'].str.lower()
 townlands['English_Name'] = townlands['English_Name'].str.lower()
 counties['County'] = counties['County'].str.lower()
@@ -43,6 +44,8 @@ def geocoder():
     county = ''
     temp=''
     addresssplit = address.lower().split(',')
+    if(len(addresssplit))<2:
+        addresssplit = address.lower().split(' ')
     iplist = []
     ratio = 0
     res = pd.DataFrame()
@@ -53,6 +56,14 @@ def geocoder():
             if(d.levenshteinDistanceRatio(c,i)>ratio and d.levenshteinDistanceRatio(c,i)>0.8):
                 county = c
                 temp = i
+    
+    if (not county) or (len(county)==0):
+        for c in counties['AlternateName']:
+            for i in iplist:
+                if(d.levenshteinDistanceRatio(c,i)>ratio and d.levenshteinDistanceRatio(c,i)>0.8):
+                    county = c
+                    temp = i
+
     if (not county) or (len(county)==0):
         return make_response(jsonify({"error":{"code":"400",
                                             "message": "Bad Request - Enter Valid Address"}}), 400)  
@@ -64,8 +75,15 @@ def geocoder():
                 if(d.levenshteinDistanceRatio(i,a)>ratio):
                     ratio = d.levenshteinDistanceRatio(i,a)
                     townland=a
+                    
     if townland:
         res = townland_df[townland_df['English_Name']==townland]
+    if (not townland) or (len(townland)==0):
+        for a in townland_df['Alternate_Name']:
+            for i in iplist:
+                if(d.levenshteinDistanceRatio(i,a)>ratio):
+                    ratio = d.levenshteinDistanceRatio(i,a)
+                    townland=a
     if (not townland) or (len(townland)==0):
         res = counties[counties['English_Name']==county]
     wgs84 = pyproj.Proj(projparams = 'epsg:4326')
